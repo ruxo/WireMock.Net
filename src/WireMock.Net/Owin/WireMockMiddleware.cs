@@ -14,7 +14,9 @@ using WireMock.Types;
 using WireMock.ResponseBuilders;
 using WireMock.Settings;
 using System.Collections.Generic;
+using System.Diagnostics;
 using WireMock.Constants;
+using WireMock.Server;
 using WireMock.Util;
 #if !USE_ASPNETCORE
 using IContext = Microsoft.Owin.IOwinContext;
@@ -96,6 +98,10 @@ namespace WireMock.Owin
         private async Task InvokeInternalAsync(IContext ctx)
         {
             var request = await _requestMapper.MapAsync(ctx.Request, _options).ConfigureAwait(false);
+
+            var logId = _guidUtils.NewGuid();
+            _options.HttpEvents.OnNext(new HttpEvents.Request(logId, request));
+            var stopwatch = Stopwatch.StartNew();
 
             var logRequest = false;
             IResponseMessage? response = null;
@@ -188,11 +194,13 @@ namespace WireMock.Owin
             }
             finally
             {
+                var elapsed = stopwatch.Elapsed;
+
                 var log = new LogEntry
                 {
-                    Guid = _guidUtils.NewGuid(),
+                    Guid = logId,
                     RequestMessage = request,
-                    ResponseMessage = response,
+                    ResponseMessage = response!,
 
                     MappingGuid = result.Match?.Mapping?.Guid,
                     MappingTitle = result.Match?.Mapping?.Title,
@@ -202,8 +210,8 @@ namespace WireMock.Owin
                     PartialMappingTitle = result.Partial?.Mapping?.Title,
                     PartialMatchResult = result.Partial?.RequestMatchResult
                 };
-
                 LogRequest(log, logRequest);
+                _options.HttpEvents.OnNext(new HttpEvents.Response(logId, log, elapsed));
 
                 try
                 {

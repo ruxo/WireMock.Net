@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Reactive.Subjects;
 using JetBrains.Annotations;
+using Microsoft.AspNetCore.Http;
 using Stef.Validation;
 using WireMock.Logging;
 using WireMock.Matchers;
@@ -14,8 +16,16 @@ using WireMock.Matchers.Request;
 
 namespace WireMock.Server;
 
+public abstract record HttpEvents
+{
+    public sealed record Request(Guid Id, IRequestMessage Message): HttpEvents;
+    public sealed record Response(Guid Id, LogEntry Log, TimeSpan Elasped): HttpEvents;
+}
+
 public partial class WireMockServer
 {
+    public IObservable<HttpEvents> HttpEvents => _options.HttpEvents;
+
     /// <inheritdoc />
     [PublicAPI]
     public event NotifyCollectionChangedEventHandler LogEntriesChanged

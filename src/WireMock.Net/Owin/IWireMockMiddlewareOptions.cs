@@ -2,9 +2,11 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Reactive.Subjects;
 using WireMock.Handlers;
 using WireMock.Logging;
 using WireMock.Matchers;
+using WireMock.Server;
 using WireMock.Types;
 using WireMock.Util;
 #if !USE_ASPNETCORE
@@ -31,6 +33,8 @@ internal interface IWireMockMiddlewareOptions
     ConcurrentDictionary<string, ScenarioState> Scenarios { get; }
 
     ConcurrentObservableCollection<LogEntry> LogEntries { get; }
+
+    Subject<HttpEvents> HttpEvents { get; }
 
     int? RequestLogExpirationDuration { get; set; }
 
